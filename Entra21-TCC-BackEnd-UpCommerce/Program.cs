@@ -1,4 +1,4 @@
-using Entra21_TCC_BackEnd_UpCommerce.Context;
+﻿using Entra21_TCC_BackEnd_UpCommerce.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -6,19 +6,33 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// =====================================
+// Configurações de Serviços (ANTES do Build)
+// =====================================
 
+// 1️⃣ CORS - permitir Angular
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularDev",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200") // endereço do Angular
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
+// 2️⃣ Controllers e Swagger
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// 3️⃣ Banco de Dados MySQL
 var connectionString = builder.Configuration.GetConnectionString("MySql");
 builder.Services.AddDbContext<AppDb>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-var app = builder.Build();
-
+// 4️⃣ Autenticação JWT
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -39,11 +53,17 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// 5️⃣ Autorização
 builder.Services.AddAuthorization();
-builder.Services.AddControllers();
-builder.Services.AddDbContext<AppDb>();
 
-// Configure the HTTP request pipeline.
+// =====================================
+// Construir aplicação
+// =====================================
+var app = builder.Build();
+
+// =====================================
+// Pipeline
+// =====================================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -52,6 +72,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// 6️⃣ Usar CORS antes de Authentication/Authorization
+app.UseCors("AllowAngularDev");
+
+// Necessário para usar [Authorize]
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

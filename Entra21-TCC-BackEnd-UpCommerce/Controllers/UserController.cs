@@ -87,7 +87,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
         // POST - Login com JWT
         // ==========================
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] UserDto dto)
+        public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
@@ -131,7 +131,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok("Usuário registrado com sucesso.");
+            return Ok(new { message = "Usuário registrado com sucesso." });
         }
 
         // ==========================
