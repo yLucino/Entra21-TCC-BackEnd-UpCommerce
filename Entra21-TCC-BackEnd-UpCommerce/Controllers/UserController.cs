@@ -60,7 +60,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
         public async Task<IActionResult> GetAll()
         {
             var users = await _context.Users
-                .Select(u => new { u.Id, u.Name, u.Email, u.Role })
+                .Select(u => new { u.Id, u.Name, u.Email, u.Role, u.urlLinkedin, u.urlInstagram, u.urlPhoto })
                 .ToListAsync();
 
             return Ok(users);
@@ -74,7 +74,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
         {
             var user = await _context.Users
                 .Where(u => u.Id == id)
-                .Select(u => new { u.Id, u.Name, u.Email, u.Role })
+                .Select(u => new { u.Id, u.Name, u.Email, u.Role, u.urlLinkedin, u.urlInstagram, u.urlPhoto })
                 .FirstOrDefaultAsync();
 
             if (user == null)
@@ -125,7 +125,10 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
                 Name = dto.Name,
                 Email = dto.Email,
                 Password = hashedPassword,
-                Role = dto.Role
+                Role = dto.Role,
+                urlPhoto = dto.urlPhoto,
+                urlInstagram = dto.urlInstagram,
+                urlLinkedin = dto.urlLinkedin,
             };
 
             _context.Users.Add(user);
@@ -148,8 +151,10 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             user.Name = dto.Name;
             user.Email = dto.Email;
             user.Role = dto.Role;
+            user.urlPhoto = dto.urlPhoto;
+            user.urlLinkedin = dto.urlLinkedin;
+            user.urlInstagram = dto.urlInstagram;
 
-            // Atualiza a senha apenas se foi enviada
             if (!string.IsNullOrWhiteSpace(dto.Password))
                 user.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
@@ -160,8 +165,27 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
                 user.Id,
                 user.Name,
                 user.Email,
-                user.Role
+                user.Role,
+                user.urlPhoto,
+                user.urlLinkedin,
+                user.urlInstagram
             });
+        }
+
+        [HttpPost("validate-password")]
+        public async Task<IActionResult> ValidatePassword([FromBody] ValidatePasswordDto dto)
+        {
+            var user = await _context.Users.FindAsync(dto.UserId);
+
+            if (user == null)
+                return NotFound("Usuário não encontrado");
+
+            bool isValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.Password);
+
+            if (!isValid)
+                return Unauthorized("Senha incorreta");
+
+            return Ok(new { message = "Senha válida" });
         }
     }
 }
