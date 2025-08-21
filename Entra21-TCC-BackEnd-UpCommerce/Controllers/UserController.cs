@@ -24,9 +24,6 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             _configuration = configuration;
         }
 
-        // ==========================
-        // JWT Token Generator
-        // ==========================
         private string GenerateJwtToken(User user)
         {
             var claims = new[]
@@ -53,9 +50,6 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        // ==========================
-        // GET - Listar todos sem senha
-        // ==========================
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -66,9 +60,6 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             return Ok(users);
         }
 
-        // ==========================
-        // GET - Buscar por ID sem senha
-        // ==========================
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -83,9 +74,6 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             return Ok(user);
         }
 
-        // ==========================
-        // POST - Login com JWT
-        // ==========================
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
@@ -109,9 +97,6 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             });
         }
 
-        // ==========================
-        // POST - Registro com hash de senha
-        // ==========================
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserDto dto)
         {
@@ -137,9 +122,6 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             return Ok(new { message = "Usuário registrado com sucesso." });
         }
 
-        // ==========================
-        // PUT - Atualizar usuário com hash de senha
-        // ==========================
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UserDto dto)
         {

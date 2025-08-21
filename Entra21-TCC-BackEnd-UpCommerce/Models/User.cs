@@ -10,5 +10,7 @@
         public string ?urlPhoto { get; set; }
         public string ?urlLinkedin { get; set; }
         public string ?urlInstagram { get; set; }
+
+        public ICollection<Project>? Projects { get; set; }
     }
 }

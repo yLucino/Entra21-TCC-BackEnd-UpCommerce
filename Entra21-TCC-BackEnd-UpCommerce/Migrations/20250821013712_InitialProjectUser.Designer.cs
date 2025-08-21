@@ -4,6 +4,7 @@ using Entra21_TCC_BackEnd_UpCommerce.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20250821013712_InitialProjectUser")]
+    partial class InitialProjectUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,17 +37,22 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("ParentCdkId")
+                    b.Property<int?>("CdkId1")
                         .HasColumnType("int");
 
                     b.Property<int?>("ProjectId")
                         .HasColumnType("int");
 
+                    b.Property<int>("StyleId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentCdkId");
+                    b.HasIndex("CdkId1");
 
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("StyleId");
 
                     b.ToTable("Cdks");
                 });
@@ -119,9 +127,6 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<int?>("Bottom")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("CdkId")
                         .HasColumnType("int");
 
                     b.Property<string>("Color")
@@ -258,9 +263,6 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CdkId")
-                        .IsUnique();
-
                     b.ToTable("Styles");
                 });
 
@@ -304,19 +306,23 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
 
             modelBuilder.Entity("Entra21_TCC_BackEnd_UpCommerce.Models.Cdk", b =>
                 {
-                    b.HasOne("Entra21_TCC_BackEnd_UpCommerce.Models.Cdk", "Parent")
+                    b.HasOne("Entra21_TCC_BackEnd_UpCommerce.Models.Cdk", null)
                         .WithMany("Children")
-                        .HasForeignKey("ParentCdkId")
+                        .HasForeignKey("CdkId1")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("Entra21_TCC_BackEnd_UpCommerce.Models.Project", "Project")
+                    b.HasOne("Entra21_TCC_BackEnd_UpCommerce.Models.Project", null)
                         .WithMany("Component")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.Navigation("Parent");
+                    b.HasOne("Entra21_TCC_BackEnd_UpCommerce.Models.Style", "Style")
+                        .WithMany()
+                        .HasForeignKey("StyleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Project");
+                    b.Navigation("Style");
                 });
 
             modelBuilder.Entity("Entra21_TCC_BackEnd_UpCommerce.Models.Project", b =>
@@ -330,20 +336,9 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Entra21_TCC_BackEnd_UpCommerce.Models.Style", b =>
-                {
-                    b.HasOne("Entra21_TCC_BackEnd_UpCommerce.Models.Cdk", "Cdk")
-                        .WithOne("Style")
-                        .HasForeignKey("Entra21_TCC_BackEnd_UpCommerce.Models.Style", "CdkId");
-
-                    b.Navigation("Cdk");
-                });
-
             modelBuilder.Entity("Entra21_TCC_BackEnd_UpCommerce.Models.Cdk", b =>
                 {
                     b.Navigation("Children");
-
-                    b.Navigation("Style");
                 });
 
             modelBuilder.Entity("Entra21_TCC_BackEnd_UpCommerce.Models.Project", b =>
