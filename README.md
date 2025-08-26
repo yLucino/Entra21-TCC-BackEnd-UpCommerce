@@ -5,7 +5,7 @@ API para gerenciamento de usuários e projetos do UpCommerce. Desenvolvido em **
 **Base URL:**  
 http://localhost:5256/api
 
-**Base URL: (swagger)**  
+**Base URL (Swagger):**  
 http://localhost:5256/swagger/index.html
 
 ---
@@ -27,17 +27,17 @@ http://localhost:5256/swagger/index.html
 
 | Método | Endpoint | Descrição | Body | Resposta |
 |--------|----------|-----------|------|----------|
-| GET | `/project/user/{userId}` | Retorna todos os projetos de um usuário | - | ```json [{ "id": 1, "userId": 1, "title": "Projeto 1", "subTitle": "Slogan do projeto", "description": "Descrição do projeto", "urlLogo": "" }]``` |
-| GET | `/project/{id}` | Retorna detalhes completos de um projeto, incluindo componentes | - | ```json { "id": 1, "userId": 1, "title": "Projeto 1", "subTitle": "Slogan do projeto", "description": "Descrição do projeto", "urlLogo": "", "component": [{ "id": "areaComponent-001", "cdkId": "homeList", "styles": { "width": 100, "height": 50 }, "children": [] }] }``` |
-| POST | `/project` | Cria um novo projeto associado a um usuário | ```json { "userId": 1, "title": "Novo Projeto", "subTitle": "Slogan", "description": "Descrição do projeto", "urlLogo": "", "component": [] }``` | Retorna o projeto criado |
-| PUT | `/project/{id}` | Atualiza os dados e componentes de um projeto | Mesma estrutura do POST | Retorna o projeto atualizado |
-| DELETE | `/project/{id}` | Remove um projeto específico | - | HTTP 204 No Content |
+| GET | `/project/user/{userId}` | Retorna todos os projetos de um usuário | - | ```json [{ "id": 1, "title": "Projeto 1", "subTitle": "Slogan do projeto", "description": "Descrição do projeto", "urlLogo": "" }]``` |
+| GET | `/project/user/{userId}/{projectId}` | Retorna detalhes completos de um projeto, incluindo componentes | - | ```json { "id": 1, "title": "Projeto 1", "subTitle": "Slogan do projeto", "description": "Descrição do projeto", "urlLogo": "", "userId": 1, "component": [{ "id": "areaComponent-001", "cdkId": "homeList", "children": [], "style": {...} }] }``` |
+| POST | `/project/user/{userId}` | Cria um novo projeto associado a um usuário | ```json { "title": "Novo Projeto", "subTitle": "Slogan", "description": "Descrição do projeto", "urlLogo": "", "component": [] }``` | ```json { "message": "Projeto criado com sucesso.", "projectId": 1 }``` |
+| PUT | `/project/user/{userId}/{projectId}` | Atualiza os dados e componentes de um projeto | Mesma estrutura do POST | Retorna o projeto atualizado, incluindo `component` como JSON |
+| DELETE | `/project/user/{userId}/{projectId}` | Remove um projeto específico | - | ```json { "message": "Projeto deletado com sucesso." }``` |
 
 ---
 
 ### Observações
 
-- Todos os endpoints de criação ou atualização de projeto devem incluir o **`userId`** para associar o projeto ao usuário.
-- Senhas **nunca são retornadas** nas respostas.
-- Componentes de projeto (`component`) seguem a estrutura `CdkComponent` com `styles` e `children`.
-
+- **Componentes do projeto (`component`)** são armazenados como JSON (`ComponentJson`) no banco de dados.  
+- GET de todos os projetos (`/project/user/{userId}`) retorna **apenas os campos principais** (`id`, `title`, `subTitle`, `description`, `urlLogo`).  
+- Componentes podem ser tratados pelo frontend diretamente em JSON, sem FK ou tabelas separadas.  
+- Senhas **nunca são retornadas** nas respostas.  
