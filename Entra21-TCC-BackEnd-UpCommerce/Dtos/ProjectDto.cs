@@ -1,4 +1,7 @@
-﻿namespace Entra21_TCC_BackEnd_UpCommerce.Dtos
+﻿using Entra21_TCC_BackEnd_UpCommerce.Models;
+using System.Text.Json.Serialization;
+
+namespace Entra21_TCC_BackEnd_UpCommerce.Dtos
 {
     public class ProjectDto
     {
@@ -7,7 +10,6 @@
         public string SubTitle { get; set; }
         public string Description { get; set; }
         public int UserId { get; set; }
-
-        public List<CdkDto> Component { get; set; }
+        public List<CdkDto> Component { get; set; } = new List<CdkDto>();
     }
 }

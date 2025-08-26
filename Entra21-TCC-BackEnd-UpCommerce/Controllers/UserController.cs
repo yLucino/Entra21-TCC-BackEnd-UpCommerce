@@ -34,8 +34,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -68,8 +67,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
                 .Select(u => new { u.Id, u.Name, u.Email, u.Role, u.urlLinkedin, u.urlInstagram, u.urlPhoto })
                 .FirstOrDefaultAsync();
 
-            if (user == null)
-                return NotFound("Usuário não encontrado.");
+            if (user == null) return NotFound("Usuário não encontrado.");
 
             return Ok(user);
         }
@@ -79,8 +77,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
-                return Unauthorized("E-mail ou senha inválidos.");
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.Password)) return Unauthorized("E-mail ou senha inválidos.");
 
             var token = GenerateJwtToken(user);
 
@@ -100,8 +97,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserDto dto)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-                return BadRequest("E-mail já registrado.");
+            if (await _context.Users.AnyAsync(u => u.Email == dto.Email)) return BadRequest("E-mail já registrado.");
 
             var hashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
@@ -127,8 +123,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
 
-            if (user == null)
-                return NotFound("Usuário não encontrado.");
+            if (user == null) return NotFound("Usuário não encontrado.");
 
             user.Name = dto.Name;
             user.Email = dto.Email;
@@ -137,8 +132,7 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             user.urlLinkedin = dto.urlLinkedin;
             user.urlInstagram = dto.urlInstagram;
 
-            if (!string.IsNullOrWhiteSpace(dto.Password))
-                user.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            if (!string.IsNullOrWhiteSpace(dto.Password)) user.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
             await _context.SaveChangesAsync();
 
@@ -159,13 +153,11 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
         {
             var user = await _context.Users.FindAsync(dto.UserId);
 
-            if (user == null)
-                return NotFound("Usuário não encontrado");
+            if (user == null) return NotFound("Usuário não encontrado");
 
             bool isValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.Password);
 
-            if (!isValid)
-                return Unauthorized("Senha incorreta");
+            if (!isValid) return Unauthorized("Senha incorreta");
 
             return Ok(new { message = "Senha válida" });
         }

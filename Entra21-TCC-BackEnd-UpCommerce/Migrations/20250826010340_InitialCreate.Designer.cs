@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20250821014131_InitialProjectSetup")]
-    partial class InitialProjectSetup
+    [Migration("20250826010340_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,18 +27,15 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
 
             modelBuilder.Entity("Entra21_TCC_BackEnd_UpCommerce.Models.Cdk", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Id")
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("CdkId")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("ParentCdkId")
-                        .HasColumnType("int");
+                    b.Property<string>("ParentCdkId")
+                        .HasColumnType("varchar(255)");
 
                     b.Property<int?>("ProjectId")
                         .HasColumnType("int");
@@ -95,168 +92,193 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AlignSelf")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("BackgroundColor")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("BorderColor")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("BorderRadiusBottomLeft")
+                    b.Property<int>("BorderRadiusBottomLeft")
                         .HasColumnType("int");
 
-                    b.Property<int?>("BorderRadiusBottomRight")
+                    b.Property<int>("BorderRadiusBottomRight")
                         .HasColumnType("int");
 
-                    b.Property<int?>("BorderRadiusTopLeft")
+                    b.Property<int>("BorderRadiusTopLeft")
                         .HasColumnType("int");
 
-                    b.Property<int?>("BorderRadiusTopRight")
+                    b.Property<int>("BorderRadiusTopRight")
                         .HasColumnType("int");
 
-                    b.Property<int?>("BorderSize")
+                    b.Property<int>("BorderSize")
                         .HasColumnType("int");
 
                     b.Property<string>("BorderType")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("Bottom")
+                    b.Property<int>("Bottom")
                         .HasColumnType("int");
 
-                    b.Property<int?>("CdkId")
-                        .HasColumnType("int");
+                    b.Property<string>("CdkId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("Color")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("Cursor")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("Display")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("FlexAlign")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("FlexAlignItems")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("FlexDirection")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("FlexGap")
+                    b.Property<int>("FlexGap")
                         .HasColumnType("int");
 
                     b.Property<string>("FlexJustify")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("FlexWrap")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("FontFamily")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("FontSize")
+                    b.Property<int>("FontSize")
                         .HasColumnType("int");
 
                     b.Property<string>("FontWeight")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("Height")
+                    b.Property<int>("Height")
                         .HasColumnType("int");
 
-                    b.Property<int?>("HoverBorderRadius")
+                    b.Property<int>("HoverBorderRadius")
                         .HasColumnType("int");
 
                     b.Property<string>("HoverScale")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("HoverShadowBlur")
+                    b.Property<int>("HoverShadowBlur")
                         .HasColumnType("int");
 
                     b.Property<string>("HoverShadowColor")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("HoverShadowX")
+                    b.Property<int>("HoverShadowX")
                         .HasColumnType("int");
 
-                    b.Property<int?>("HoverShadowY")
+                    b.Property<int>("HoverShadowY")
                         .HasColumnType("int");
 
                     b.Property<string>("IconSource")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("ImageSource")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("Left")
+                    b.Property<int>("Left")
                         .HasColumnType("int");
 
                     b.Property<string>("LinkSource")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("MarginBottom")
+                    b.Property<int>("MarginBottom")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MarginLeft")
+                    b.Property<int>("MarginLeft")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MarginRight")
+                    b.Property<int>("MarginRight")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MarginTop")
+                    b.Property<int>("MarginTop")
                         .HasColumnType("int");
 
                     b.Property<string>("NewComponentId")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("Opacity")
+                    b.Property<double>("Opacity")
+                        .HasColumnType("double");
+
+                    b.Property<int>("PaddingBottom")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PaddingBottom")
+                    b.Property<int>("PaddingLeft")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PaddingLeft")
+                    b.Property<int>("PaddingRight")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PaddingRight")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PaddingTop")
+                    b.Property<int>("PaddingTop")
                         .HasColumnType("int");
 
                     b.Property<string>("Position")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("Right")
+                    b.Property<int>("Right")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ShadowBlur")
+                    b.Property<int>("ShadowBlur")
                         .HasColumnType("int");
 
                     b.Property<string>("ShadowColor")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("ShadowX")
+                    b.Property<int>("ShadowX")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ShadowY")
+                    b.Property<int>("ShadowY")
                         .HasColumnType("int");
 
                     b.Property<string>("TextAlign")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("TextContent")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("Top")
+                    b.Property<int>("Top")
                         .HasColumnType("int");
 
-                    b.Property<int?>("Width")
+                    b.Property<int>("Width")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ZIndex")
+                    b.Property<int>("ZIndex")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -337,7 +359,9 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Migrations
                 {
                     b.HasOne("Entra21_TCC_BackEnd_UpCommerce.Models.Cdk", "Cdk")
                         .WithOne("Style")
-                        .HasForeignKey("Entra21_TCC_BackEnd_UpCommerce.Models.Style", "CdkId");
+                        .HasForeignKey("Entra21_TCC_BackEnd_UpCommerce.Models.Style", "CdkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Cdk");
                 });
