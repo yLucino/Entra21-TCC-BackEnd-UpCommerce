@@ -9,38 +9,31 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Context
 
         public DbSet<User> Users { get; set; }
         public DbSet<Project> Projects { get; set; }
-        public DbSet<Cdk> Cdks { get; set; }
-        public DbSet<Style> Styles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Project → Cdk
-            modelBuilder.Entity<Project>()
-                .HasMany(p => p.Component)
-                .WithOne(c => c.Project)
-                .HasForeignKey(c => c.ProjectId)
-                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Project>(entity =>
+            {
+                entity.HasKey(p => p.Id);
 
-            // Cdk → Children recursivo
-            modelBuilder.Entity<Cdk>()
-                .HasMany(c => c.Children)
-                .WithOne(c => c.Parent)
-                .HasForeignKey(c => c.ParentCdkId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(p => p.Title)
+                    .IsRequired()
+                    .HasMaxLength(200);
 
-            // Cdk → Style (1:1)
-            modelBuilder.Entity<Cdk>()
-                .HasOne(c => c.Style)
-                .WithOne(s => s.Cdk)
-                .HasForeignKey<Style>(s => s.CdkId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(p => p.SubTitle)
+                    .HasMaxLength(300);
 
-            // Configurar Ids varchar(255)
-            modelBuilder.Entity<Cdk>()
-                .Property(c => c.Id)
-                .HasColumnType("varchar(255)");
+                entity.Property(p => p.Description)
+                    .HasMaxLength(2000);
+
+                entity.Property(p => p.UrlLogo)
+                    .HasMaxLength(3000);
+
+                entity.Property(p => p.ComponentJson)
+                    .HasColumnType("TEXT");
+            });
         }
     }
 }
