@@ -17,213 +17,337 @@ namespace Entra21_TCC_BackEnd_UpCommerce.Controllers
             _context = context;
         }
 
-        // ------------------ GET ALL DO USUÁRIO ------------------
+        // GET todos os projetos de um usuário
         [HttpGet("user/{userId:int}")]
-        public async Task<IActionResult> GetProjectsByUser(int userId)
+        public async Task<IActionResult> GetUserProjects(int userId)
         {
             var projects = await _context.Projects
                 .Where(p => p.UserId == userId)
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Title,
-                    p.SubTitle,
-                    p.Description,
-                    p.UrlLogo
-                })
+                .Include(p => p.Component)
+                    .ThenInclude(c => c.Children)
+                .Include(p => p.Component)
+                    .ThenInclude(c => c.Style)
                 .ToListAsync();
 
             return Ok(projects);
         }
 
-        // ------------------ GET BY ID DE UM PROJETO DE UM USUÁRIO ------------------
+        // GET projeto específico de um usuário
         [HttpGet("user/{userId:int}/{projectId:int}")]
-        public async Task<IActionResult> GetProjectByUser(int userId, int projectId)
+        public async Task<IActionResult> GetProject(int userId, int projectId)
         {
             var project = await _context.Projects
+                .Where(p => p.UserId == userId && p.Id == projectId)
                 .Include(p => p.Component)
                     .ThenInclude(c => c.Children)
-                .FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
+                .Include(p => p.Component)
+                    .ThenInclude(c => c.Style)
+                .FirstOrDefaultAsync();
 
             if (project == null)
-                return NotFound("Projeto não encontrado para esse usuário.");
+                return NotFound("Projeto não encontrado.");
 
             return Ok(project);
         }
 
-        // ------------------ POST ------------------
+        // POST criar projeto
         [HttpPost("user/{userId:int}")]
-        public async Task<IActionResult> CreateProject(int userId, [FromBody] ProjectDto projectDto)
+        public async Task<IActionResult> CreateProject(int userId, [FromBody] ProjectDto dto)
         {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                return NotFound("Usuário não encontrado.");
-
-            var project = MapProject(projectDto);
-            project.UserId = userId; // associa ao usuário
-            _context.Projects.Add(project);
-            await _context.SaveChangesAsync();
-
-            return Ok(project);
-        }
-
-        // ------------------ PUT ------------------
-        [HttpPut("user/{userId:int}/{projectId:int}")]
-        public async Task<IActionResult> UpdateProject(int userId, int projectId, [FromBody] ProjectDto projectDto)
-        {
-            var project = await _context.Projects
-                .Include(p => p.Component)
-                    .ThenInclude(c => c.Children)
-                .FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
-
-            if (project == null)
-                return NotFound("Projeto não encontrado para esse usuário.");
-
-            project.Title = projectDto.Title;
-            project.SubTitle = projectDto.SubTitle;
-            project.Description = projectDto.Description;
-            project.UrlLogo = projectDto.UrlLogo;
-
-            UpdateCdks(project.Component, projectDto.Component);
-
-            await _context.SaveChangesAsync();
-            return Ok(project);
-        }
-
-        // ------------------ DELETE ------------------
-        [HttpDelete("user/{userId:int}/{projectId:int}")]
-        public async Task<IActionResult> DeleteProject(int userId, int projectId)
-        {
-            var project = await _context.Projects
-                .Include(p => p.Component)
-                .FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
-
-            if (project == null)
-                return NotFound("Projeto não encontrado para esse usuário.");
-
-            _context.Projects.Remove(project);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        // ------------------ Função recursiva para atualizar Cdks ------------------
-        private void UpdateCdks(ICollection<Cdk> existingCdks, ICollection<CdkDto> newCdks)
-        {
-            if (newCdks == null) return;
-
-            var toRemove = existingCdks.Where(e => !newCdks.Any(n => n.CdkId == e.CdkId)).ToList();
-            foreach (var rem in toRemove)
-                existingCdks.Remove(rem);
-
-            foreach (var newCdk in newCdks)
-            {
-                var existing = existingCdks.FirstOrDefault(e => e.CdkId == newCdk.CdkId);
-                if (existing != null)
-                {
-                    existing.Style = MapStyles(newCdk.Style);
-
-                    if (newCdk.Children != null)
-                    {
-                        if (existing.Children == null)
-                            existing.Children = new List<Cdk>();
-
-                        UpdateCdks(existing.Children, newCdk.Children);
-                    }
-                    else
-                    {
-                        existing.Children = null;
-                    }
-                }
-                else
-                {
-                    existingCdks.Add(MapCdk(newCdk));
-                }
-            }
-        }
-
-        // ------------------ Mapeamentos ------------------
-        private Project MapProject(ProjectDto dto)
-        {
-            return new Project
+            var project = new Project
             {
                 Title = dto.Title,
                 SubTitle = dto.SubTitle,
                 Description = dto.Description,
                 UrlLogo = dto.UrlLogo,
-                Component = dto.Component?.Select(c => MapCdk(c)).ToList()
+                UserId = userId,
+                Component = dto.Component.Select(c => MapCdkDtoToModel(c)).ToList()
             };
+
+            _context.Projects.Add(project);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Projeto criado com sucesso.", projectId = project.Id });
         }
 
-        private Cdk MapCdk(CdkDto dto)
+        // PUT atualizar projeto
+        [HttpPut("user/{userId:int}/{projectId:int}")]
+        public async Task<IActionResult> UpdateProject(int userId, int projectId, [FromBody] ProjectDto dto)
         {
-            return new Cdk
+            if (dto == null || dto.UserId != userId)
+                return BadRequest("Dados inválidos.");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                CdkId = dto.CdkId,
-                Style = MapStyles(dto.Style),
-                Children = dto.Children?.Select(c => MapCdk(c)).ToList()
-            };
+                // 1️⃣ Busca o projeto existente
+                var project = await _context.Projects
+                    .Include(p => p.Component)
+                        .ThenInclude(c => c.Children)
+                    .Include(p => p.Component)
+                        .ThenInclude(c => c.Style)
+                    .FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
+
+                if (project == null)
+                    return NotFound("Projeto não encontrado.");
+
+                // 2️⃣ Atualiza os campos do projeto
+                project.Title = dto.Title;
+                project.SubTitle = dto.SubTitle;
+                project.UrlLogo = dto.UrlLogo;
+                project.Description = dto.Description;
+
+                await _context.SaveChangesAsync();
+
+                // 3️⃣ Atualiza ou adiciona componentes recursivamente
+                foreach (var cdkDto in dto.Component)
+                {
+                    AddOrUpdateComponentRecursive(cdkDto, project.Id, null);
+                }
+
+                // 4️⃣ Salva tudo de uma vez
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(project);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, ex.Message);
+            }
         }
 
-        private Style MapStyles(StyleDto dto)
+        // DELETE apagar projeto
+        [HttpDelete("user/{userId:int}/{projectId:int}")]
+        public async Task<IActionResult> DeleteProject(int userId, int projectId)
+        {
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
+
+            if (project == null)
+                return NotFound("Projeto não encontrado.");
+
+            _context.Projects.Remove(project);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Projeto deletado com sucesso." });
+        }
+
+        // -----------------------------
+        // Mapeia CdkDto -> Cdk
+        // -----------------------------
+        private Cdk MapCdkDtoToModel(CdkDto dto)
+        {
+            var cdk = new Cdk
+            {
+                Id = dto.Id,
+                CdkId = dto.CdkId,
+                ParentCdkId = dto.ParentCdkId,
+                Style = dto.Style != null ? MapStyleDtoToModel(dto.Style, dto.Id) : null,
+                Children = dto.Children?.Select(c => MapCdkDtoToModel(c)).ToList() ?? new List<Cdk>()
+            };
+
+            return cdk;
+        }
+
+        // -----------------------------
+        // Mapeia StyleDto -> Style
+        // -----------------------------
+        private Style MapStyleDtoToModel(StyleDto dto, string cdkId)
         {
             return new Style
             {
-                Width = dto.Width,
-                Height = dto.Height,
-                MarginLeft = dto.MarginLeft,
-                MarginTop = dto.MarginTop,
-                MarginRight = dto.MarginRight,
-                MarginBottom = dto.MarginBottom,
-                PaddingLeft = dto.PaddingLeft,
-                PaddingTop = dto.PaddingTop,
-                PaddingRight = dto.PaddingRight,
-                PaddingBottom = dto.PaddingBottom,
-                BorderSize = dto.BorderSize,
-                BorderColor = dto.BorderColor,
-                BorderType = dto.BorderType,
-                BorderRadiusTopLeft = dto.BorderRadiusTopLeft,
-                BorderRadiusTopRight = dto.BorderRadiusTopRight,
-                BorderRadiusBottomLeft = dto.BorderRadiusBottomLeft,
-                BorderRadiusBottomRight = dto.BorderRadiusBottomRight,
-                BackgroundColor = dto.BackgroundColor,
-                Color = dto.Color,
-                FontFamily = dto.FontFamily,
-                TextContent = dto.TextContent,
-                FontSize = dto.FontSize,
-                FontWeight = dto.FontWeight,
-                TextAlign = dto.TextAlign,
-                Opacity = dto.Opacity,
-                ShadowX = dto.ShadowX,
-                ShadowY = dto.ShadowY,
-                ShadowBlur = dto.ShadowBlur,
-                ShadowColor = dto.ShadowColor,
-                Position = dto.Position,
-                Top = dto.Top,
-                Left = dto.Left,
-                Right = dto.Right,
-                Bottom = dto.Bottom,
-                ZIndex = dto.ZIndex,
-                HoverScale = dto.HoverScale,
-                HoverBorderRadius = dto.HoverBorderRadius,
-                HoverShadowX = dto.HoverShadowX,
-                HoverShadowY = dto.HoverShadowY,
-                HoverShadowBlur = dto.HoverShadowBlur,
-                HoverShadowColor = dto.HoverShadowColor,
-                Cursor = dto.Cursor,
-                Display = dto.Display,
-                FlexDirection = dto.FlexDirection,
-                FlexJustify = dto.FlexJustify,
-                FlexAlign = dto.FlexAlign,
-                FlexWrap = dto.FlexWrap,
-                FlexGap = dto.FlexGap,
-                FlexAlignItems = dto.FlexAlignItems,
-                AlignSelf = dto.AlignSelf,
-                NewComponentId = dto.NewComponentId,
-                ImageSource = dto.ImageSource,
-                IconSource = dto.IconSource,
-                LinkSource = dto.LinkSource
+                CdkId = cdkId,
+                Width = dto.Width ?? 0,
+                Height = dto.Height ?? 0,
+
+                MarginLeft = dto.MarginLeft ?? 0,
+                MarginTop = dto.MarginTop ?? 0,
+                MarginRight = dto.MarginRight ?? 0,
+                MarginBottom = dto.MarginBottom ?? 0,
+
+                PaddingLeft = dto.PaddingLeft ?? 0,
+                PaddingTop = dto.PaddingTop ?? 0,
+                PaddingRight = dto.PaddingRight ?? 0,
+                PaddingBottom = dto.PaddingBottom ?? 0,
+
+                BorderSize = dto.BorderSize ?? 0,
+                BorderColor = dto.BorderColor ?? "",
+                BorderType = dto.BorderType ?? "",
+
+                BorderRadiusTopLeft = dto.BorderRadiusTopLeft ?? 0,
+                BorderRadiusTopRight = dto.BorderRadiusTopRight ?? 0,
+                BorderRadiusBottomLeft = dto.BorderRadiusBottomLeft ?? 0,
+                BorderRadiusBottomRight = dto.BorderRadiusBottomRight ?? 0,
+
+                BackgroundColor = dto.BackgroundColor ?? "",
+                Color = dto.Color ?? "",
+
+                FontFamily = dto.FontFamily ?? "",
+                TextContent = dto.TextContent ?? "",
+                FontSize = dto.FontSize ?? 0,
+                FontWeight = dto.FontWeight ?? "",
+                TextAlign = dto.TextAlign ?? "",
+
+                Opacity = dto.Opacity ?? 1,
+
+                ShadowX = dto.ShadowX ?? 0,
+                ShadowY = dto.ShadowY ?? 0,
+                ShadowBlur = dto.ShadowBlur ?? 0,
+                ShadowColor = dto.ShadowColor ?? "#000000",
+
+                Position = dto.Position ?? "",
+                Top = dto.Top ?? 0,
+                Left = dto.Left ?? 0,
+                Right = dto.Right ?? 0,
+                Bottom = dto.Bottom ?? 0,
+
+                ZIndex = dto.ZIndex ?? 0,
+
+                HoverScale = dto.HoverScale ?? "",
+                HoverBorderRadius = dto.HoverBorderRadius ?? 0,
+                HoverShadowX = dto.HoverShadowX ?? 0,
+                HoverShadowY = dto.HoverShadowY ?? 0,
+                HoverShadowBlur = dto.HoverShadowBlur ?? 0,
+                HoverShadowColor = dto.HoverShadowColor ?? "#000000",
+
+                Cursor = dto.Cursor ?? "",
+
+                Display = dto.Display ?? "",
+                FlexDirection = dto.FlexDirection ?? "",
+                FlexJustify = dto.FlexJustify ?? "",
+                FlexAlign = dto.FlexAlign ?? "",
+                FlexWrap = dto.FlexWrap ?? "",
+                FlexGap = dto.FlexGap ?? 0,
+                FlexAlignItems = dto.FlexAlignItems ?? "",
+                AlignSelf = dto.AlignSelf ?? "",
+            
+                NewComponentId = dto.NewComponentId ?? "",
+                ImageSource = dto.ImageSource ?? "",
+                IconSource = dto.IconSource ?? "",
+                LinkSource = dto.LinkSource ?? "",
             };
+        }
+
+        // -----------------------------
+        // Atualiza ou adiciona componente e style recursivamente
+        // -----------------------------
+        private void AddOrUpdateComponentRecursive(CdkDto cdkDto, int projectId, string? parentCdkId)
+        {
+            var cdk = _context.Cdks
+                .Include(c => c.Style)
+                .FirstOrDefault(c => c.Id == cdkDto.Id);
+
+            if (cdk == null)
+            {
+                cdk = new Cdk
+                {
+                    Id = cdkDto.Id,
+                    CdkId = cdkDto.CdkId,
+                    ParentCdkId = parentCdkId,
+                    ProjectId = projectId
+                };
+                _context.Cdks.Add(cdk);
+            }
+            else
+            {
+                cdk.CdkId = cdkDto.CdkId;
+                cdk.ParentCdkId = parentCdkId;
+            }
+
+            // Atualiza ou cria Style
+            if (cdkDto.Style != null)
+            {
+                if (cdk.Style == null)
+                {
+                    cdk.Style = MapStyleDtoToModel(cdkDto.Style, cdk.Id);
+                    _context.Styles.Add(cdk.Style);
+                }
+                else
+                {
+                    var s = cdk.Style;
+                    var dto = cdkDto.Style;
+
+                    s.Width = dto.Width ?? 0;
+                    s.Height = dto.Height ?? 0;
+
+                    s.MarginLeft = dto.MarginLeft ?? 0;
+                    s.MarginTop = dto.MarginTop ?? 0;
+                    s.MarginRight = dto.MarginRight ?? 0;
+                    s.MarginBottom = dto.MarginBottom ?? 0;
+
+                    s.PaddingLeft = dto.PaddingLeft ?? 0;
+                    s.PaddingTop = dto.PaddingTop ?? 0;
+                    s.PaddingRight = dto.PaddingRight ?? 0;
+                    s.PaddingBottom = dto.PaddingBottom ?? 0;
+
+                    s.BorderSize = dto.BorderSize ?? 0;
+                    s.BorderColor = dto.BorderColor ?? "";
+                    s.BorderType = dto.BorderType ?? "";
+
+                    s.BorderRadiusTopLeft = dto.BorderRadiusTopLeft ?? 0;
+                    s.BorderRadiusTopRight = dto.BorderRadiusTopRight ?? 0;
+                    s.BorderRadiusBottomLeft = dto.BorderRadiusBottomLeft ?? 0;
+                    s.BorderRadiusBottomRight = dto.BorderRadiusBottomRight ?? 0;
+
+                    s.BackgroundColor = dto.BackgroundColor ?? "";
+                    s.Color = dto.Color ?? "";
+
+                    s.FontFamily = dto.FontFamily ?? "";
+                    s.TextContent = dto.TextContent ?? "";
+                    s.FontSize = dto.FontSize ?? 0;
+                    s.FontWeight = dto.FontWeight ?? "";
+                    s.TextAlign = dto.TextAlign ?? "";
+
+                    s.Opacity = dto.Opacity ?? 1;
+
+                    s.ShadowX = dto.ShadowX ?? 0;
+                    s.ShadowY = dto.ShadowY ?? 0;
+                    s.ShadowBlur = dto.ShadowBlur ?? 0;
+                    s.ShadowColor = dto.ShadowColor ?? "#000000";
+
+                    s.Position = dto.Position ?? "";
+                    s.Top = dto.Top ?? 0;
+                    s.Left = dto.Left ?? 0;
+                    s.Right = dto.Right ?? 0;
+                    s.Bottom = dto.Bottom ?? 0;
+
+                    s.ZIndex = dto.ZIndex ?? 0;
+
+                    s.HoverScale = dto.HoverScale ?? "";
+                    s.HoverBorderRadius = dto.HoverBorderRadius ?? 0;
+                    s.HoverShadowX = dto.HoverShadowX ?? 0;
+                    s.HoverShadowY = dto.HoverShadowY ?? 0;
+                    s.HoverShadowBlur = dto.HoverShadowBlur ?? 0;
+                    s.HoverShadowColor = dto.HoverShadowColor ?? "#000000";
+
+                    s.Cursor = dto.Cursor ?? "";
+
+                    s.Display = dto.Display ?? "";
+                    s.FlexDirection = dto.FlexDirection ?? "";
+                    s.FlexJustify = dto.FlexJustify ?? "";
+                    s.FlexAlign = dto.FlexAlign ?? "";
+                    s.FlexWrap = dto.FlexWrap ?? "";
+                    s.FlexGap = dto.FlexGap ?? 0;
+                    s.FlexAlignItems = dto.FlexAlignItems ?? "";
+                    s.AlignSelf = dto.AlignSelf ?? "";
+
+                    s.NewComponentId = dto.NewComponentId ?? "";
+                    s.ImageSource = dto.ImageSource ?? "";
+                    s.IconSource = dto.IconSource ?? "";
+                    s.LinkSource = dto.LinkSource ?? "";
+                }
+            }
+
+            // Processa filhos recursivamente
+            if (cdkDto.Children != null && cdkDto.Children.Any())
+            {
+                foreach (var child in cdkDto.Children)
+                {
+                    AddOrUpdateComponentRecursive(child, projectId, cdk.Id);
+                }
+            }
         }
     }
 }
